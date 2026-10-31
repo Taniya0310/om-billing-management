@@ -45,11 +45,15 @@ export async function deleteSession(token) {
 }
 
 export function sessionCookie(token, expiresAt) {
-  return `om_session=${token}; HttpOnly; Path=/; SameSite=Lax; Expires=${new Date(expiresAt).toUTCString()}`;
+  const sameSite = process.env.NODE_ENV === "production" ? "None" : "Lax";
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `om_session=${token}; HttpOnly; Path=/; SameSite=${sameSite}${secure}; Expires=${new Date(expiresAt).toUTCString()}`;
 }
 
 export function clearSessionCookie() {
-  return "om_session=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0";
+  const sameSite = process.env.NODE_ENV === "production" ? "None" : "Lax";
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `om_session=; HttpOnly; Path=/; SameSite=${sameSite}${secure}; Max-Age=0`;
 }
 
 export function readCookie(request, name) {
