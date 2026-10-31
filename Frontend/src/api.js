@@ -1,6 +1,8 @@
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  `http://${window.location.hostname}:4000/api`;
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+const apiUrl = configuredApiUrl || `http://${window.location.hostname}:4000`;
+const API_BASE = apiUrl.replace(/\/+$/, "").endsWith("/api")
+  ? apiUrl.replace(/\/+$/, "")
+  : `${apiUrl.replace(/\/+$/, "")}/api`;
 
 export async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {

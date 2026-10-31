@@ -312,12 +312,16 @@ async function handle(request, response) {
 const server = http.createServer((request, response) => {
   const requestOrigin = request.headers.origin;
   const allowedOrigins = new Set([
-    config.frontendOrigin,
+    ...String(config.frontendOrigin)
+      .split(",")
+      .map((origin) => origin.trim().replace(/\/+$/, ""))
+      .filter(Boolean),
     "http://localhost:5173",
     "http://127.0.0.1:5173",
   ]);
-  if (requestOrigin && allowedOrigins.has(requestOrigin)) {
-    response.setHeader("Access-Control-Allow-Origin", requestOrigin);
+  const normalisedOrigin = requestOrigin?.replace(/\/+$/, "");
+  if (normalisedOrigin && allowedOrigins.has(normalisedOrigin)) {
+    response.setHeader("Access-Control-Allow-Origin", normalisedOrigin);
     response.setHeader("Vary", "Origin");
   }
   response.setHeader("Access-Control-Allow-Credentials", "true");
