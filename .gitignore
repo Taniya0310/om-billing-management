@@ -1,0 +1,63 @@
+# Dependencies
+**/node_modules/
+
+# Environment variables and local configuration
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.template
+
+# Local databases and application data
+**/data/
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Local uploads, storage, and generated user content
+**/uploads/
+**/storage/
+**/user-data/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build and coverage output
+**/dist/
+**/build/
+**/coverage/
+**/.cache/
+**/.vite/
+
+# Secrets, credentials, and certificates
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+credentials*.json
+*service-account*.json
+secrets*.json
+
+# Runtime files
+*.pid
+*.seed
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp

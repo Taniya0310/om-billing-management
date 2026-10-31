@@ -1,0 +1,62 @@
+.bill-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.summary-tile {
+  padding: 20px 22px;
+}
+.summary-tile span,
+.summary-tile small {
+  display: block;
+  color: #9398a0;
+  font-size: 11px;
+}
+.summary-tile strong {
+  display: block;
+  font:
+    700 23px "Poppins",
+    sans-serif;
+  margin: 8px 0 5px;
+}
+.bill-list {
+  padding-bottom: 6px;
+}
+.bill-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 20px;
+  align-items: center;
+  border-top: 1px solid #f0f1f2;
+  padding: 15px 22px;
+}
+.bill-row strong,
+.bill-row small {
+  display: block;
+}
+.bill-row strong {
+  font-size: 11px;
+}
+.bill-row small {
+  font-size: 10px;
+  color: #a0a4ac;
+  margin-top: 4px;
+}
+.bill-row > span:nth-child(2) {
+  font-weight: 700;
+  color: #4e535c;
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .bill-summary {
+    grid-template-columns: 1fr;
+  }
+  .bill-row {
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+  .bill-row .status {
+    grid-column: 2;
+  }
+}

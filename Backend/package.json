@@ -1,0 +1,13 @@
+{
+  "name": "om-enterprises-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}

@@ -1,0 +1,87 @@
+.documents-panel {
+  min-height: 500px;
+}
+.documents-header {
+  gap: 18px;
+}
+.documents-header .filter-row {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.document-status {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px 8px;
+  font: 10px "Poppins", sans-serif;
+  cursor: pointer;
+}
+.document-status.pending {
+  color: #a46c18;
+  background: #fff9ed;
+}
+.document-status.complete {
+  color: #267d55;
+  background: #eefaf3;
+}
+.bilty-cell {
+  min-width: 170px;
+}
+.bilty-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 6px 5px 0;
+  border-radius: 5px;
+  padding: 4px 6px;
+  color: #9a6b1e;
+  background: #fff9ed;
+  font-size: 10px;
+}
+.bilty-item.received {
+  color: #267d55;
+  background: #eefaf3;
+  text-decoration: line-through;
+}
+.bilty-item input {
+  accent-color: #2f9c68;
+}
+.bilty-item em {
+  font-size: 8px;
+  font-style: normal;
+  opacity: 0.8;
+}
+.bilty-add {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+.bilty-add input {
+  width: 105px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 5px 6px;
+  font: 10px "Poppins", sans-serif;
+}
+.bilty-add button {
+  border: 0;
+  border-radius: 5px;
+  padding: 0 8px;
+  color: #fff;
+  background: #f16e50;
+  cursor: pointer;
+}
+.bilty-error {
+  display: block;
+  color: #c04f43;
+  font-size: 9px;
+  margin-top: 4px;
+}
+@media (max-width: 900px) {
+  .documents-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .documents-header .filter-row {
+    justify-content: flex-start;
+  }
+}

@@ -1,0 +1,7 @@
+.register-panel {
+  min-height: 500px;
+}
+.register-panel .table-wrap {
+  max-height: calc(100vh - 265px);
+  overflow: auto;
+}
