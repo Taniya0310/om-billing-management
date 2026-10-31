@@ -8,7 +8,7 @@
 !**/.env.template
 
 # Local databases and application data
-**/data/
+Backend/data/
 *.sqlite
 *.sqlite3
 *.db
