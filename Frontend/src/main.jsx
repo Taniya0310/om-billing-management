@@ -21,6 +21,8 @@ import "./styles/app.css";
 const emptyForm = {
   branch: "Jamshedpur",
   date: "",
+  reportingDate: "",
+  unloadingDate: "",
   clientName: "",
   vehicle: "",
   from: "",
@@ -61,6 +63,12 @@ function normaliseTrip(trip) {
     date: /^\d{4}-\d{2}-\d{2}$/.test(trip.date)
       ? formatTripDate(trip.date)
       : trip.date,
+    reportingDate: /^\d{4}-\d{2}-\d{2}$/.test(trip.reportingDate)
+      ? formatTripDate(trip.reportingDate)
+      : trip.reportingDate || "",
+    unloadingDate: /^\d{4}-\d{2}-\d{2}$/.test(trip.unloadingDate)
+      ? formatTripDate(trip.unloadingDate)
+      : trip.unloadingDate || "",
   };
 }
 
@@ -68,6 +76,8 @@ function editableTripPayload(form) {
   return {
     branch: form.branch,
     date: toDateInputValue(form.date),
+    reportingDate: toDateInputValue(form.reportingDate),
+    unloadingDate: toDateInputValue(form.unloadingDate),
     clientName: String(form.clientName || "").trim(),
     vehicle: String(form.vehicle || "").trim(),
     from: String(form.from || "").trim(),
@@ -103,6 +113,8 @@ function tripMatchesSearch(trip, searchQuery) {
       trip.id,
       trip.branch,
       trip.date,
+      trip.reportingDate,
+      trip.unloadingDate,
       trip.clientName,
       trip.vehicle,
       trip.from,
@@ -229,6 +241,8 @@ function App() {
       ...trip,
       clientName: trip.clientName || "",
       date: toDateInputValue(trip.date),
+      reportingDate: toDateInputValue(trip.reportingDate),
+      unloadingDate: toDateInputValue(trip.unloadingDate),
       weight: String(trip.weight).replace(" MT", ""),
       driverPhone: trip.driverPhone || "",
       phone: trip.phone || "",
@@ -261,7 +275,7 @@ function App() {
     try {
       const { trip: updatedTrip } = await apiRequest(
         `/trips/${encodeURIComponent(trip.id)}`,
-        { method: "PATCH", body: JSON.stringify({ ...trip, ...changes }) },
+        { method: "PATCH", body: JSON.stringify({ ...editableTripPayload(trip), ...changes }) },
       );
       const storedTrip = normaliseTrip(updatedTrip);
       setTrips((currentTrips) =>

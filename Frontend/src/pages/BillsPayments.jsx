@@ -28,7 +28,7 @@ export default function BillsPayments({ trips }) {
               outstanding.reduce((sum, trip) => sum + tripBalance(trip), 0),
             )}
           </strong>
-          <small>Booking minus advance and challan</small>
+          <small>Booking minus advance, challan, and detention</small>
         </div>
       </section>
       <section className="panel bill-list">

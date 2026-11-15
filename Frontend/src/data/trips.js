@@ -81,4 +81,5 @@ export const money = (value) =>
 export const tripBalance = (trip) =>
   Number(trip.booking || 0) -
   Number(trip.advance || 0) -
-  Number(trip.challan || 0);
+  Number(trip.challan || 0) +
+  Number(trip.detentionAmount || 0);

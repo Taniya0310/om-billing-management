@@ -29,6 +29,7 @@ export default function TripTable({ trips, onUpdateAdvance, onEditTrip }) {
             <th>Challan</th>
             <th>Advance</th>
             <th>Balance</th>
+            <th>Detention</th>
             <th>Status</th>
             <th />
           </tr>
@@ -88,6 +89,12 @@ export default function TripTable({ trips, onUpdateAdvance, onEditTrip }) {
                 )}
               </td>
               <td className="balance-cell">{money(tripBalance(trip))}</td>
+              <td>
+                {trip.detentionAmount ? money(trip.detentionAmount) : "—"}
+                {trip.reportingDate && trip.unloadingDate && (
+                  <small>{trip.reportingDate} → {trip.unloadingDate}</small>
+                )}
+              </td>
               <td>
                 <span
                   className={`status ${trip.status.toLowerCase().replaceAll(" ", "-")}`}

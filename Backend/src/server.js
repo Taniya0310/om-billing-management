@@ -13,6 +13,7 @@ import {
 } from "./auth.js";
 
 const statuses = new Set(["In transit", "Pending POD", "Paid"]);
+const DETENTION_RATE = 1500;
 const branches = {
   Jamshedpur: { code: "Jsr", table: "trips_jamshedpur", biltyTable: "bilties_jamshedpur", sequence: "jsr_trip_number_seq" },
   Maharashtra: { code: "MH", table: "trips_maharashtra", biltyTable: "bilties_maharashtra", sequence: "mh_trip_number_seq" },
@@ -74,6 +75,8 @@ function tripPayload(body) {
     podStatus: body.podStatus === "Received" ? "Received" : "Pending",
     clientBillStatus: body.clientBillStatus === "Made" ? "Made" : "Not made",
     date: String(body.date || "").trim(),
+    reportingDate: String(body.reportingDate || "").trim(),
+    unloadingDate: String(body.unloadingDate || "").trim(),
     clientName: String(body.clientName || "").trim(),
     vehicle: String(body.vehicle || "").trim(),
     from: String(body.from || "").trim(),
@@ -98,6 +101,10 @@ function tripFromRow(row, branch) {
     podStatus: row.pod_status || "Pending",
     clientBillStatus: row.client_bill_status || "Not made",
     date: row.trip_date,
+    reportingDate: row.reporting_date || "",
+    unloadingDate: row.unloading_date || "",
+    detentionDays: detentionDays(row.reporting_date, row.unloading_date),
+    detentionAmount: detentionDays(row.reporting_date, row.unloading_date) * DETENTION_RATE,
     clientName: row.client_name,
     vehicle: row.vehicle,
     from: row.origin,
@@ -113,6 +120,14 @@ function tripFromRow(row, branch) {
     driverPhone: row.driver_phone,
     status: row.status,
   };
+}
+
+function detentionDays(reportingDate, unloadingDate) {
+  if (!reportingDate || !unloadingDate) return 0;
+  const reporting = new Date(`${reportingDate}T00:00:00Z`);
+  const unloading = new Date(`${unloadingDate}T00:00:00Z`);
+  if (Number.isNaN(reporting.getTime()) || Number.isNaN(unloading.getTime())) return 0;
+  return Math.max(0, Math.floor((unloading - reporting) / 86400000));
 }
 
 function biltyFromRow(row) {
@@ -213,17 +228,21 @@ async function handle(request, response) {
 
   if (method === "POST" && pathname === "/api/trips") {
     const body = tripPayload(await readBody(request));
-    if (!body.date || !body.vehicle || !body.from || !body.to) {
-      json(response, 400, { error: "Date, vehicle, origin, and destination are required" });
+    if (!body.date || !body.reportingDate || !body.vehicle || !body.from || !body.to) {
+      json(response, 400, { error: "Date, reporting date, vehicle, origin, and destination are required" });
+      return;
+    }
+    if (body.unloadingDate && body.unloadingDate < body.reportingDate) {
+      json(response, 400, { error: "Unloading date cannot be before reporting date" });
       return;
     }
     const branchDetails = branches[body.branch];
     const numberResult = await db.query(`SELECT nextval('${branchDetails.sequence}') AS trip_number`);
     const tripNumber = Number(numberResult.rows[0].trip_number);
     const id = `${branchDetails.code}-${String(tripNumber).padStart(3, "0")}`;
-    await db.query(`INSERT INTO ${branchDetails.table} (id, trip_number, user_id, trip_date, client_name, vehicle, origin, destination, weight, freight, booking, advance, challan, receiver, owner, phone, driver_phone, status, pod_status, client_bill_status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`, [
-      id, tripNumber, user.id, body.date, body.clientName, body.vehicle, body.from, body.to, body.weight,
+    await db.query(`INSERT INTO ${branchDetails.table} (id, trip_number, user_id, trip_date, reporting_date, unloading_date, client_name, vehicle, origin, destination, weight, freight, booking, advance, challan, receiver, owner, phone, driver_phone, status, pod_status, client_bill_status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`, [
+      id, tripNumber, user.id, body.date, body.reportingDate, body.unloadingDate || null, body.clientName, body.vehicle, body.from, body.to, body.weight,
       body.freight, body.booking, body.advance, body.challan, body.receiver, body.owner,
       body.phone, body.driverPhone, body.status, body.podStatus, body.clientBillStatus,
     ]);
@@ -294,8 +313,16 @@ async function handle(request, response) {
       await db.query(`UPDATE ${existing._table} SET advance = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3`, [advance, tripId, user.id]);
     } else {
       const bodyTrip = tripPayload({ ...tripFromRow(existing), ...body });
-      const updateResult = await db.query(`UPDATE ${existing._table} SET trip_date = $1, client_name = $2, vehicle = $3, origin = $4, destination = $5, weight = $6, freight = $7, booking = $8, advance = $9, challan = $10, receiver = $11, owner = $12, phone = $13, driver_phone = $14, status = $15, pod_status = $16, client_bill_status = $17, updated_at = CURRENT_TIMESTAMP WHERE id = $18 AND user_id = $19 RETURNING *`, [
-        bodyTrip.date, bodyTrip.clientName, bodyTrip.vehicle, bodyTrip.from, bodyTrip.to, bodyTrip.weight,
+      if (!bodyTrip.reportingDate) {
+        json(response, 400, { error: "Reporting date is required" });
+        return;
+      }
+      if (bodyTrip.unloadingDate && bodyTrip.unloadingDate < bodyTrip.reportingDate) {
+        json(response, 400, { error: "Unloading date cannot be before reporting date" });
+        return;
+      }
+      const updateResult = await db.query(`UPDATE ${existing._table} SET trip_date = $1, reporting_date = $2, unloading_date = $3, client_name = $4, vehicle = $5, origin = $6, destination = $7, weight = $8, freight = $9, booking = $10, advance = $11, challan = $12, receiver = $13, owner = $14, phone = $15, driver_phone = $16, status = $17, pod_status = $18, client_bill_status = $19, updated_at = CURRENT_TIMESTAMP WHERE id = $20 AND user_id = $21 RETURNING *`, [
+        bodyTrip.date, bodyTrip.reportingDate, bodyTrip.unloadingDate || null, bodyTrip.clientName, bodyTrip.vehicle, bodyTrip.from, bodyTrip.to, bodyTrip.weight,
         bodyTrip.freight, bodyTrip.booking, bodyTrip.advance, bodyTrip.challan, bodyTrip.receiver,
         bodyTrip.owner, bodyTrip.phone, bodyTrip.driverPhone, bodyTrip.status, bodyTrip.podStatus, bodyTrip.clientBillStatus, tripId, user.id,
       ]);

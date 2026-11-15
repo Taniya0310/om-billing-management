@@ -28,10 +28,22 @@ export default function NewTripModal({
     setAdvanceEdited(true);
     setForm((current) => ({ ...current, advance: event.target.value }));
   };
+  const detentionDays = form.reportingDate && form.unloadingDate
+    ? Math.max(
+        0,
+        Math.floor(
+          (new Date(`${form.unloadingDate}T00:00:00`) -
+            new Date(`${form.reportingDate}T00:00:00`)) /
+            86400000,
+        ),
+      )
+    : 0;
+  const detentionAmount = detentionDays * 1500;
   const calculatedBalance =
     Number(form.booking || 0) -
     Number(form.advance || 0) -
-    Number(form.challan || 0);
+    Number(form.challan || 0) +
+    detentionAmount;
   const calculatedProfit =
     Number(form.freight || 0) -
     Number(form.booking || 0) +
@@ -76,6 +88,20 @@ export default function NewTripModal({
               value={form.date}
               onChange={setField("date")}
               required
+            />
+            <Field
+              label="Reporting date"
+              type="date"
+              value={form.reportingDate || ""}
+              onChange={setField("reportingDate")}
+              required
+            />
+            <Field
+              label="Unloading date"
+              type="date"
+              value={form.unloadingDate || ""}
+              onChange={setField("unloadingDate")}
+              min={form.reportingDate || undefined}
             />
             <Field
               label="Client name"
@@ -157,6 +183,10 @@ export default function NewTripModal({
           <div className="balance-preview">
             <span>Calculated balance</span>
             <strong>{money(calculatedBalance)}</strong>
+          </div>
+          <div className="balance-preview">
+            <span>Detention ({detentionDays} day{detentionDays === 1 ? "" : "s"})</span>
+            <strong>{money(detentionAmount)}</strong>
           </div>
         </div>
         <div className="form-section">
