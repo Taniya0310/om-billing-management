@@ -7,7 +7,7 @@ import {
   createSession,
   deleteSession,
   getUserFromToken,
-  readCookie,
+  readSessionToken,
   sessionCookie,
   verifyPassword,
 } from "./auth.js";
@@ -52,7 +52,7 @@ function publicUser(user) {
 }
 
 async function requireUser(request, response) {
-  const user = await getUserFromToken(readCookie(request, "om_session"));
+  const user = await getUserFromToken(readSessionToken(request));
   if (!user) json(response, 401, { error: "Authentication required" });
   return user;
 }
@@ -131,8 +131,6 @@ async function handle(request, response) {
   const url = new URL(request.url, `http://${request.headers.host || "localhost"}`);
   const method = request.method;
   const pathname = url.pathname;
-  const token = readCookie(request, "om_session");
-
   if (method === "OPTIONS") {
     response.writeHead(204);
     response.end();
@@ -160,7 +158,7 @@ async function handle(request, response) {
     const result = await db.query("INSERT INTO users (name, email, password_hash, password_salt) VALUES ($1, $2, $3, $4) RETURNING id", [name, email, credentials.hash, credentials.salt]);
     const user = { id: result.rows[0].id, name, email };
     const session = await createSession(user.id);
-    json(response, 201, { user }, { "Set-Cookie": sessionCookie(session.token, session.expiresAt) });
+    json(response, 201, { user, sessionToken: session.token }, { "Set-Cookie": sessionCookie(session.token, session.expiresAt) });
     return;
   }
   if (method === "POST" && pathname === "/api/auth/login") {
@@ -173,16 +171,16 @@ async function handle(request, response) {
       return;
     }
     const session = await createSession(user.id);
-    json(response, 200, { user: publicUser(user) }, { "Set-Cookie": sessionCookie(session.token, session.expiresAt) });
+    json(response, 200, { user: publicUser(user), sessionToken: session.token }, { "Set-Cookie": sessionCookie(session.token, session.expiresAt) });
     return;
   }
   if (method === "POST" && pathname === "/api/auth/logout") {
-    await deleteSession(token);
+    await deleteSession(readSessionToken(request));
     json(response, 200, { ok: true }, { "Set-Cookie": clearSessionCookie() });
     return;
   }
   if (method === "GET" && pathname === "/api/auth/me") {
-    const user = await getUserFromToken(token);
+    const user = await getUserFromToken(readSessionToken(request));
     json(response, user ? 200 : 401, user ? { user: publicUser(user) } : { error: "Authentication required" });
     return;
   }
@@ -296,11 +294,17 @@ async function handle(request, response) {
       await db.query(`UPDATE ${existing._table} SET advance = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3`, [advance, tripId, user.id]);
     } else {
       const bodyTrip = tripPayload({ ...tripFromRow(existing), ...body });
-      await db.query(`UPDATE ${existing._table} SET trip_date = $1, client_name = $2, vehicle = $3, origin = $4, destination = $5, weight = $6, freight = $7, booking = $8, advance = $9, challan = $10, receiver = $11, owner = $12, phone = $13, driver_phone = $14, status = $15, pod_status = $16, client_bill_status = $17, updated_at = CURRENT_TIMESTAMP WHERE id = $18 AND user_id = $19`, [
+      const updateResult = await db.query(`UPDATE ${existing._table} SET trip_date = $1, client_name = $2, vehicle = $3, origin = $4, destination = $5, weight = $6, freight = $7, booking = $8, advance = $9, challan = $10, receiver = $11, owner = $12, phone = $13, driver_phone = $14, status = $15, pod_status = $16, client_bill_status = $17, updated_at = CURRENT_TIMESTAMP WHERE id = $18 AND user_id = $19 RETURNING *`, [
         bodyTrip.date, bodyTrip.clientName, bodyTrip.vehicle, bodyTrip.from, bodyTrip.to, bodyTrip.weight,
         bodyTrip.freight, bodyTrip.booking, bodyTrip.advance, bodyTrip.challan, bodyTrip.receiver,
         bodyTrip.owner, bodyTrip.phone, bodyTrip.driverPhone, bodyTrip.status, bodyTrip.podStatus, bodyTrip.clientBillStatus, tripId, user.id,
       ]);
+      if (!updateResult.rows[0]) {
+        json(response, 404, { error: "Trip not found" });
+        return;
+      }
+      json(response, 200, { trip: tripFromRow(updateResult.rows[0], existing._branch) });
+      return;
     }
     json(response, 200, { trip: tripFromRow(await getTrip(user.id, tripId), existing._branch) });
     return;
@@ -325,7 +329,7 @@ const server = http.createServer((request, response) => {
     response.setHeader("Vary", "Origin");
   }
   response.setHeader("Access-Control-Allow-Credentials", "true");
-  response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   response.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
   handle(request, response).catch((error) => {
     console.error(`${request.method} ${request.url}`, error);

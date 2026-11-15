@@ -528,6 +528,28 @@ td {
 tbody tr:last-child td {
   border-bottom: 0;
 }
+tbody tr.cleared-row td {
+  background: #eefaf3;
+  border-bottom-color: #d8f0e1;
+  color: #43805e;
+}
+tbody tr.cleared-row td strong {
+  color: #267047;
+}
+tbody tr.cleared-row td small {
+  color: #69a17e;
+}
+tbody tr.cleared-row .vehicle-pill {
+  color: #43805e;
+  background: #e3f6ea;
+  border-color: #c9ebd5;
+}
+tbody tr.cleared-row .balance-cell {
+  color: #21824c;
+}
+tbody tr.cleared-row .icon-button {
+  color: #5ba477;
+}
 td strong {
   display: block;
   font-weight: 600;

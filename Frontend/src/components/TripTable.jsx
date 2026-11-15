@@ -35,7 +35,10 @@ export default function TripTable({ trips, onUpdateAdvance, onEditTrip }) {
         </thead>
         <tbody>
           {trips.map((trip) => (
-            <tr key={trip.id}>
+            <tr
+              key={trip.id}
+              className={tripBalance(trip) <= 0 ? "cleared-row" : ""}
+            >
               <td>
                 <strong>{trip.id}</strong>
                 <small>{trip.date}</small>

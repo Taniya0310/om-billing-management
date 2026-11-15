@@ -61,3 +61,9 @@ export function readCookie(request, name) {
   const cookie = cookieHeader.split(";").map((item) => item.trim()).find((item) => item.startsWith(`${name}=`));
   return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : null;
 }
+
+export function readSessionToken(request) {
+  const authorization = request.headers.authorization || "";
+  if (authorization.startsWith("Bearer ")) return authorization.slice(7).trim();
+  return readCookie(request, "om_session");
+}

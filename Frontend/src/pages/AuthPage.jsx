@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../components/Icon";
-import { apiRequest } from "../api";
+import { apiRequest, setSessionToken } from "../api";
 import "../styles/auth.css";
 
 export default function AuthPage({ mode, onAuthenticate }) {
@@ -26,6 +26,7 @@ export default function AuthPage({ mode, onAuthenticate }) {
           body: JSON.stringify(form),
         },
       );
+      setSessionToken(payload.sessionToken);
       onAuthenticate(payload.user);
     } catch (requestError) {
       setError(requestError.message);

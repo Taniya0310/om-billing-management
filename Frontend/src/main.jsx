@@ -9,7 +9,7 @@ import {
 } from "react-router-dom";
 import Layout from "./components/Layout";
 import NewTripModal from "./components/NewTripModal";
-import { apiRequest } from "./api";
+import { apiRequest, clearSessionToken } from "./api";
 import BillsPayments from "./pages/BillsPayments";
 import Overview from "./pages/Overview";
 import Reports from "./pages/Reports";
@@ -64,6 +64,67 @@ function normaliseTrip(trip) {
   };
 }
 
+function editableTripPayload(form) {
+  return {
+    branch: form.branch,
+    date: toDateInputValue(form.date),
+    clientName: String(form.clientName || "").trim(),
+    vehicle: String(form.vehicle || "").trim(),
+    from: String(form.from || "").trim(),
+    to: String(form.to || "").trim(),
+    weight: Number.parseFloat(String(form.weight || "").replace(" MT", "")) || 0,
+    freight: Number(form.freight || 0),
+    booking: Number(form.booking || 0),
+    advance: Number(form.advance || 0),
+    challan: Number(form.challan || 0),
+    receiver: String(form.receiver || "").trim(),
+    owner: String(form.owner || "").trim(),
+    phone: String(form.phone || "").trim(),
+    driverPhone: String(form.driverPhone || "").trim(),
+    status: form.status,
+    podStatus: form.podStatus,
+    clientBillStatus: form.clientBillStatus,
+  };
+}
+
+function normaliseSearchText(value) {
+  return String(value ?? "")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function tripMatchesSearch(trip, searchQuery) {
+  const tokens = normaliseSearchText(searchQuery).split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+
+  const searchableText = normaliseSearchText(
+    [
+      trip.id,
+      trip.branch,
+      trip.date,
+      trip.clientName,
+      trip.vehicle,
+      trip.from,
+      trip.to,
+      trip.weight,
+      trip.freight,
+      trip.booking,
+      trip.advance,
+      trip.challan,
+      trip.receiver,
+      trip.owner,
+      trip.phone,
+      trip.driverPhone,
+      trip.status,
+      trip.podStatus,
+      trip.clientBillStatus,
+    ].join(" "),
+  );
+
+  return tokens.every((token) => searchableText.includes(token));
+}
+
 function AuthOnly({ authenticated, children }) {
   return authenticated ? children : <Navigate to="/login" replace />;
 }
@@ -83,13 +144,7 @@ function App() {
   );
   const navigate = useNavigate();
   const filteredTrips = useMemo(
-    () =>
-      trips.filter((trip) =>
-        Object.values(trip)
-          .join(" ")
-          .toLowerCase()
-          .includes(query.toLowerCase()),
-      ),
+    () => trips.filter((trip) => tripMatchesSearch(trip, query)),
     [trips, query],
   );
 
@@ -109,6 +164,7 @@ function App() {
       .catch((error) => {
         if (error.status === 401) {
           localStorage.removeItem("om-authenticated");
+          clearSessionToken();
           setAuthenticated(false);
           setTrips([]);
           navigate("/login");
@@ -128,6 +184,7 @@ function App() {
   const handleLogout = () => {
     apiRequest("/auth/logout").catch(() => {});
     localStorage.removeItem("om-authenticated");
+    clearSessionToken();
     setCurrentUser(null);
     setAuthenticated(false);
     setQuery("");
@@ -184,7 +241,7 @@ function App() {
         `/trips/${encodeURIComponent(editingTrip.id)}`,
         {
           method: "PATCH",
-          body: JSON.stringify(form),
+          body: JSON.stringify(editableTripPayload(form)),
         },
       );
       const storedTrip = normaliseTrip(trip);
